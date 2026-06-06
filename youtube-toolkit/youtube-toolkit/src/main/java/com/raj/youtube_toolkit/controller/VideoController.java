@@ -1,0 +1,151 @@
+package com.raj.youtube_toolkit.controller;
+
+import com.raj.youtube_toolkit.service.YoutubeService;
+import org.json.JSONObject;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.LinkedHashSet;
+
+@RestController
+@RequestMapping("/api")
+@CrossOrigin(origins = "*")
+public class VideoController {
+
+    private final YoutubeService service;
+
+    public VideoController(YoutubeService service) {
+        this.service = service;
+    }
+
+    // 🔥 VIDEO DETAILS
+    @GetMapping("/video")
+    public String getVideoDetails(@RequestParam("url") String url) {
+
+        try {
+
+            String jsonString = service.runCommand(
+                    "yt-dlp -J \"" + url + "\""
+            );
+
+            JSONObject json = new JSONObject(jsonString);
+
+            String title = json.optString("title");
+            String thumbnail = json.optString("thumbnail");
+            long views = json.optLong("view_count");
+            int duration = json.optInt("duration");
+
+            return "Title: " + title + "\n\n"
+                    + "Views: " + views + "\n\n"
+                    + "Duration: " + duration + " sec\n\n"
+                    + "Thumbnail: " + thumbnail;
+
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
+    }
+
+    // 🔹 Thumbnail
+    @GetMapping("/thumbnail")
+    public String getThumbnail(@RequestParam("url") String url) {
+
+        return service.runCommand(
+                "yt-dlp --get-thumbnail \"" + url + "\""
+        );
+    }
+
+    // 🔹 Download URL
+    @GetMapping("/download")
+    public String downloadVideo(@RequestParam("url") String url) {
+
+        return service.runCommand(
+                "yt-dlp -f best -g \"" + url + "\""
+        );
+    }
+
+    // 🔹 Simple Tags
+    @GetMapping("/generate-tags")
+    public String generateTags(@RequestParam String title) {
+
+        return title
+                .replaceAll("[^a-zA-Z0-9 ]", "")
+                .toLowerCase()
+                .replace(" ", ", ");
+    }
+
+    // 🔥 AI TAG GENERATOR
+    @GetMapping("/ai-tags")
+    public String generateAITags(@RequestParam String title) {
+
+        // 🔹 Clean Title
+        title = title
+                .toLowerCase()
+                .replaceAll("[^a-zA-Z0-9 ]", "")
+                .trim();
+
+        String[] words = title.split("\\s+");
+
+        LinkedHashSet<String> tags = new LinkedHashSet<>();
+
+        // 🔹 Single Word Tags
+        for (String word : words) {
+
+            if (!word.isBlank()) {
+                tags.add(word);
+            }
+        }
+
+        // 🔹 2 Word Tags
+        for (int i = 0; i < words.length - 1; i++) {
+
+            tags.add(words[i] + " " + words[i + 1]);
+        }
+
+        // 🔹 3 Word Tags
+        for (int i = 0; i < words.length - 2; i++) {
+
+            tags.add(
+                    words[i] + " "
+                            + words[i + 1] + " "
+                            + words[i + 2]
+            );
+        }
+
+        // 🔥 SEO TAGS
+        tags.add(title);
+        tags.add(title + " tutorial");
+        tags.add(title + " guide");
+        tags.add(title + " shorts");
+        tags.add(title + " viral");
+        tags.add(title + " youtube");
+        tags.add(title + " reels");
+        tags.add(title + " trending video");
+        tags.add(title + " latest update");
+        tags.add(title + " hindi");
+        tags.add(title + " english");
+        tags.add(title + " tutorial hindi");
+        tags.add(title + " viral shorts");
+        tags.add(title + " 2026");
+
+        tags.add("how to " + title);
+        tags.add("best " + title);
+        tags.add("latest " + title);
+        tags.add("trending " + title);
+
+        // 🔥 Convert To String
+        String result = String.join(", ", tags);
+
+        // 🔥 EXACT 500 CHAR LIMIT
+        if (result.length() > 500) {
+
+            result = result.substring(0, 500);
+
+            int lastComma = result.lastIndexOf(",");
+
+            if (lastComma != -1) {
+                result = result.substring(0, lastComma);
+            }
+        }
+
+        return result;
+    }
+}
